@@ -1,7 +1,7 @@
 import streamlit as st
 
 # 1. 페이지 기본 설정 및 스타일 정의
-st.set_page_config(page_title="디지털 친구 - 어르신 종합 디지털 교육 앱 v4", layout="centered")
+st.set_page_config(page_title="디지털 친구 - 어르신 종합 디지털 교육 앱 v5", layout="centered")
 
 st.markdown("""
     <style>
@@ -31,7 +31,7 @@ st.markdown("""
     }
     
     /* 기능별 세부 선택 작은 버튼 스타일 */
-    div.stButton>button[key*="seat_"], div.stButton>button[key*="loc_"], div.stButton>button[key*="time_"] {
+    div.stButton>button[key*="seat_"], div.stButton>button[key*="loc_"], div.stButton>button[key*="time_"], div.stButton>button[key*="age_"], div.stButton>button[key*="num_"] {
         height: 60px !important;
         font-size: 20px !important;
     }
@@ -70,10 +70,15 @@ if 'selected_biz' not in st.session_state: st.session_state.selected_biz = ""
 if 'cart' not in st.session_state: st.session_state.cart = {}
 if 'pay_method' not in st.session_state: st.session_state.pay_method = ""
 
+# 은행 앱 전용 비밀번호 상태 변수
+if 'bank_pass' not in st.session_state: st.session_state.bank_pass = ""
+
 # 고속버스 전용 상태 변수
 if 'bus_from' not in st.session_state: st.session_state.bus_from = ""
 if 'bus_to' not in st.session_state: st.session_state.bus_to = ""
 if 'bus_time' not in st.session_state: st.session_state.bus_time = ""
+if 'bus_age' not in st.session_state: st.session_state.bus_age = ""
+if 'bus_price' not in st.session_state: st.session_state.bus_price = 0
 
 # 데이터 세팅
 KIOSK_DATA = {
@@ -93,7 +98,7 @@ def get_total_price():
         if st.session_state.selected_biz == "쇼핑":
             return sum(SHOP_DATA.get(name, 0) * qty for name, qty in st.session_state.cart.items())
         if st.session_state.selected_biz == "은행(송금)": return 50000
-        if st.session_state.selected_biz == "고속버스 예매": return 23000
+        if st.session_state.selected_biz == "고속버스 예매": return st.session_state.bus_price
         return 0
     biz = st.session_state.selected_biz
     if not biz or biz not in KIOSK_DATA: return 0
@@ -108,9 +113,12 @@ def reset_state():
     st.session_state.cart = {}
     st.session_state.selected_biz = ""
     st.session_state.pay_method = ""
+    st.session_state.bank_pass = ""
     st.session_state.bus_from = ""
     st.session_state.bus_to = ""
     st.session_state.bus_time = ""
+    st.session_state.bus_age = ""
+    st.session_state.bus_price = 0
 
 
 # --- [대분류 메인 화면] ---
@@ -130,7 +138,7 @@ if st.session_state.mode == "MAIN":
 
 
 # ==========================================
-# 🛑 [분기 1] 매장 키오스크 연습 모드 (결제 NFC 유지)
+# 🛑 [분기 1] 매장 키오스크 연습 모드
 # ==========================================
 elif st.session_state.mode == "KIOSK":
     
@@ -152,7 +160,7 @@ elif st.session_state.mode == "KIOSK":
                 st.rerun()
         if st.button("⬅️ 뒤로가기", key="k_b2_1"): st.session_state.step = 1; st.rerun()
 
-    elif st.session_state.step == 3:
+    elif st.session_state.step =3:
         biz = st.session_state.selected_biz
         st.markdown(f'<div class="guide-box">[{biz}] 드실 메뉴판입니다.<br>원하는 음식을 누르고 [다음]을 누르세요.</div>', unsafe_allow_html=True)
         
@@ -232,7 +240,7 @@ elif st.session_state.mode == "KIOSK":
 
 
 # ==========================================
-# 🛑 [분기 2] 스마트폰 필수 앱 연습 모드 (대폭 수정)
+# 🛑 [분기 2] 스마트폰 필수 앱 연습 모드
 # ==========================================
 elif st.session_state.mode == "APP":
     
@@ -245,9 +253,9 @@ elif st.session_state.mode == "APP":
         st.markdown('<div class="guide-box">원하시는 스마트폰 기능을 터치하세요.</div>', unsafe_allow_html=True)
         if st.button("🛍️ 1. 장보기 쇼핑몰 (여러 상품 골라 담기)", key="a_biz_shop"):
             st.session_state.selected_biz = "쇼핑"; st.session_state.step = 3; st.rerun()
-        if st.button("🏦 2. 모바일 뱅킹 (계좌이체 송금)", key="a_biz_bank"):
+        if st.button("🏦 2. 모바일 뱅킹 (자녀에게 계좌 송금)", key="a_biz_bank"):
             st.session_state.selected_biz = "은행(송금)"; st.session_state.step = 3; st.rerun()
-        if st.button("📅 3. 고속버스 예매 (노선 및 시간 지정)", key="a_biz_bus"):
+        if st.button("📅 3. 고속버스 예매 (노선, 나이, 좌석 지정)", key="a_biz_bus"):
             st.session_state.selected_biz = "고속버스 예매"; st.session_state.step = 3; st.rerun()
         st.markdown("---")
         if st.button("⬅ 뒤로가기", key="a_b2_1"): st.session_state.step = 1; st.rerun()
@@ -256,7 +264,7 @@ elif st.session_state.mode == "APP":
     elif st.session_state.step == 3:
         app_type = st.session_state.selected_biz
         
-        # --- 인터넷 쇼핑몰 (상품 다변화 + 키오스크식 담기 구조) ---
+        # --- 인터넷 쇼핑몰 ---
         if app_type == "쇼핑":
             st.markdown('<div class="guide-box">🛒 [디지털 마켓]<br>원하는 농산물을 골라 장바구니에 담아보세요!</div>', unsafe_allow_html=True)
             for prod_name, price in SHOP_DATA.items():
@@ -265,7 +273,7 @@ elif st.session_state.mode == "APP":
                 with col_btn:
                     if st.button("담기", key=f"shop_add_{prod_name}"):
                         st.session_state.cart[prod_name] = st.session_state.cart.get(prod_name, 0) + 1
-                        speak(f"{prod_name} 장바구니 추가")
+                        speak(f"{prod_name} 추가")
                         st.rerun()
             
             total = get_total_price()
@@ -277,34 +285,34 @@ elif st.session_state.mode == "APP":
             with col_n:
                 if st.button("주문 결제하기", key="shop_next"):
                     if total > 0: st.session_state.step = 4; st.rerun()
-                    else: st.warning("상품을 담아주세요!")
+                    else: st.warning("상품을 담어주세요!")
             
         # --- 모바일 뱅킹 송금 ---
         elif app_type == "은행(송금)":
-            st.markdown('<div class="guide-box">🏦 [스마트 뱅킹]<br>자녀에게 보낼 은행과 정보를 확인하세요.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="guide-box">🏦 [스마트 뱅킹]<br>자녀에게 보낼 은행과 정보를 입력하세요.</div>', unsafe_allow_html=True)
             st.selectbox("받는 사람 은행 선택", ["농협은행", "국민은행", "신한은행", "우리은행"])
             st.text_input("받는 사람 계좌번호", "302-1234-5678-90")
-            st.text_index = st.text_input("보낼 금액 (원)", "50,000")
+            st.text_input("보낼 금액 (원)", "50,000")
             
             col_p, col_n = st.columns(2)
             with col_p: 
                 if st.button("이전으로", key="bank_prev"): st.session_state.step = 2; st.rerun()
             with col_n:
-                if st.button("송금 정보 확인", key="bank_next"): st.session_state.step = 4; st.rerun()
+                if st.button("송금 확인 단계로", key="bank_next"): st.session_state.step = 4; st.rerun()
                 
-        # --- 고속버스 예매 (출발지 -> 도착지 -> 시간 -> 좌석 순서대로 전면 개편) ---
+        # --- 고속버스 예매 (연령 구분 단계 및 금액 가변화 추가 완료) ---
         elif app_type == "고속버스 예매":
-            st.markdown('<div class="guide-box">🚍 [고속버스 예매 티켓]</div>', unsafe_allow_html=True)
+            st.markdown('<div class="guide-box">🚍 [고속버스 예매] 노선을 순서대로 선택하세요.</div>', unsafe_allow_html=True)
             
             # 1. 출발지 선택
             st.write("📍 **1. 출발지를 고르세요**")
             c1, c2, c3 = st.columns(3)
             with c1: 
-                if st.button("🏠 서울경부", key="loc_seoul"): st.session_state.bus_from = "서울경부"; st.rerun()
+                if st.button("서울경부", key="loc_seoul"): st.session_state.bus_from = "서울경부"; st.rerun()
             with c2: 
-                if st.button("🏢 인천터미널", key="loc_incheon"): st.session_state.bus_from = "인천"; st.rerun()
+                if st.button("인천터미널", key="loc_incheon"): st.session_state.bus_from = "인천"; st.rerun()
             with c3: 
-                if st.button("🏙️ 대전복합", key="loc_daejeon"): st.session_state.bus_from = "대전"; st.rerun()
+                if st.button("대전복합", key="loc_daejeon"): st.session_state.bus_from = "대전"; st.rerun()
             st.info(f"선택된 출발지: **{st.session_state.bus_from if st.session_state.bus_from else '없음'}**")
             
             # 2. 도착지 선택
@@ -312,11 +320,11 @@ elif st.session_state.mode == "APP":
                 st.write("🏁 **2. 도착지를 고르세요**")
                 c4, c5, c6 = st.columns(3)
                 with c4: 
-                    if st.button("🌊 부산종합", key="loc_busan"): st.session_state.bus_to = "부산"; st.rerun()
+                    if st.button("부산종합", key="loc_busan"): st.session_state.bus_to = "부산"; st.rerun()
                 with c5: 
-                    if st.button("🍎 동대구", key="loc_daegu"): st.session_state.bus_to = "대구"; st.rerun()
+                    if st.button("동대구", key="loc_daegu"): st.session_state.bus_to = "대구"; st.rerun()
                 with c6: 
-                    if st.button("🍉 광주유스퀘어", key="loc_gwangju"): st.session_state.bus_to = "광주"; st.rerun()
+                    if st.button("광주유스퀘어", key="loc_gwangju"): st.session_state.bus_to = "광주"; st.rerun()
                 st.info(f"선택된 도착지: **{st.session_state.bus_to if st.session_state.bus_to else '없음'}**")
                 
             # 3. 시간 선택
@@ -324,21 +332,36 @@ elif st.session_state.mode == "APP":
                 st.write("⏰ **3. 출발 시간을 고르세요**")
                 c7, c8, c9 = st.columns(3)
                 with c7: 
-                    if st.button("☀️ 아침 09:00", key="time_09"): st.session_state.bus_time = "09:00"; st.rerun()
+                    if st.button("아침 09:00", key="time_09"): st.session_state.bus_time = "09:00"; st.rerun()
                 with c8: 
-                    if st.button("🌤️ 낮 13:00", key="time_13"): st.session_state.bus_time = "13:00"; st.rerun()
+                    if st.button("낮 13:00", key="time_13"): st.session_state.bus_time = "13:00"; st.rerun()
                 with c9: 
-                    if st.button("🌙 저녁 18:00", key="time_18"): st.session_state.bus_time = "18:00"; st.rerun()
+                    if st.button("저녁 18:00", key="time_18"): st.session_state.bus_time = "18:00"; st.rerun()
                 st.info(f"선택된 출발시간: **{st.session_state.bus_time if st.session_state.bus_time else '없음'}**")
 
-            # 모든 정보 입력 완료 후 좌석 선택 활성화
-            if st.session_state.bus_from and st.session_state.bus_to and st.session_state.bus_time:
-                st.write("💺 **4. 비어있는 좌석을 선택하세요**")
+            # ★ 4. 나이/우대 유형 선택 단계 (새로 신설!)
+            if st.session_state.bus_time:
+                st.write("👥 **4. 탑승자 나이(우대) 유형을 고르세요**")
+                ca1, ca2, ca3 = st.columns(3)
+                with ca1:
+                    if st.button("성인 (일반 요금)", key="age_adult"): 
+                        st.session_state.bus_age = "성인"; st.session_state.bus_price = 23000; st.rerun()
+                with ca2:
+                    if st.button("청소년 (20% 할인)", key="age_youth"): 
+                        st.session_state.bus_age = "청소년"; st.session_state.bus_price = 18400; st.rerun()
+                with ca3:
+                    if st.button("경로/노인 (30% 우대)", key="age_elder"): 
+                        st.session_state.bus_age = "경로(어르신)"; st.session_state.bus_price = 16100; st.rerun()
+                st.info(f"선택 유형: **{st.session_state.bus_age}** (금액: {st.session_state.bus_price:,}원)")
+
+            # 5. 좌석 선택
+            if st.session_state.bus_age:
+                st.write("💺 **5. 비어있는 좌석을 선택하세요**")
                 cx, cy = st.columns(2)
                 with cx: st.button("💺 05번 (예약 완료)", disabled=True)
                 with cy: 
                     if st.button("💺 06번 (예약 가능)", key="seat_06"):
-                        speak("06번 좌석 선택 완료")
+                        speak("좌석 선택 완료")
                         st.session_state.step = 4
                         st.rerun()
                         
@@ -352,40 +375,47 @@ elif st.session_state.mode == "APP":
         
         total = get_total_price()
         if app_type == "쇼핑":
-            for name, qty in st.session_state.cart.items():
-                st.write(f"· {name} : {qty}개")
+            for name, qty in st.session_state.cart.items(): st.write(f"· {name} : {qty}개")
             st.markdown(f"### 총 결제 금액 : **{total:,}원**")
+            col_p, col_n = st.columns(2)
+            with col_p: id = st.button("이전으로", key="b4_s"); st.session_state.step=3 if id else st.session_state.step
+            with col_n:
+                if st.button("다음 (결제하기)", key="next_shop_pay"): st.session_state.step = 5; st.rerun()
+                
         elif app_type == "은행(송금)":
-            st.write(f"· 자녀에게 보내는 계좌이체 금액 : **{total:,}원**")
+            st.write(f"· 자녀에게 보내는 이체 금액 : **{total:,}원**")
+            col_p, col_n = st.columns(2)
+            with col_p: id = st.button("이전으로", key="b4_b"); st.session_state.step=3 if id else st.session_state.step
+            with col_n:
+                # ★ 은행(송금)은 쇼핑몰 결제창으로 가는 게 아니라 비밀번호 6자리 화면으로 바로 연동!
+                if st.button("확인 (비밀번호 입력)", key="next_bank_pass"): st.session_state.step = 8; st.rerun()
+                
         elif app_type == "고속버스 예매":
-            st.write(f"· 노선 : {st.session_state.bus_from} ➡️ {st.session_state.bus_to}")
-            st.write(f"· 시간 및 좌석 : {st.session_state.bus_time} 출발 / 06번 좌석")
-            st.markdown(f"### 버스 승차권 금액 : **{total:,}원**")
-            
-        col_p, col_n = st.columns(2)
-        with col_p: 
-            if st.button("이전으로", key="app_b4_3"): st.session_state.step = 3; st.rerun()
-        with col_n:
-            if st.button("다음 단계 (결제하기)", key="app_n4_5"): st.session_state.step = 5; st.rerun()
+            st.write(f"· 여정 : {st.session_state.bus_from} ➡️ {st.session_state.bus_to}")
+            st.write(f"· 조건 : {st.session_state.bus_time} 출발 / {st.session_state.bus_age} 요금")
+            st.markdown(f"### 최종 승차권 금액 : **{total:,}원**")
+            col_p, col_n = st.columns(2)
+            with col_p: id = st.button("이전으로", key="b4_bu"); st.session_state.step=3 if id else st.session_state.step
+            with col_n:
+                if st.button("다음 (결제하기)", key="next_bus_pay"): st.session_state.step = 5; st.rerun()
 
-    # [5단계: 온라인 전용 결제 방식 선택 (NFC 스마트페이/무통장 전면 제외)]
+    # [5단계: 온라인 전용 결제 방식 선택 (NFC/무통장 전면 제외 및 계좌이체 실전화)]
     elif st.session_state.step == 5:
-        st.markdown('<div class="guide-box">스마트폰 안에서 안전하게 결제할 수단을 골라주세요.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="guide-box">스마트폰 온라인 결제 수단을 골라주세요.</div>', unsafe_allow_html=True)
         
-        if st.button("🏦 실시간 계좌이체 (통장에서 바로 송금)", key="a_pay_bank_transfer"):
+        if st.button("🏦 실시간 계좌이체 (통장 계좌번호 입력)", key="a_pay_bank_transfer"):
             st.session_state.pay_method = "계좌이체"
-            st.session_state.step = 7 # 계좌이체 승인은 별도 단말 태그 없이 완료창 이동
-            speak("계좌이체 승인 완료")
+            st.session_state.step = 9 # ★ 바로 끝나지 않고 계좌번호 입력창(9단계)으로 연동!
             st.rerun()
             
-        if st.button("💳 신용/체크카드 결제 (카드번호 입력)", key="a_pay_card_online"):
+        if st.button("CN 💳 신용/체크카드 결제 (카드번호 직접입력)", key="a_pay_card_online"):
             st.session_state.pay_method = "온라인카드"
             st.session_state.step = 6
             st.rerun()
             
         if st.button("이전으로", key="app_b5_4"): st.session_state.step = 4; st.rerun()
 
-    # [6단계: 온라인 전용 결제 세부 액션]
+    # [6단계: 온라인 전용 신용카드 결제 정보 입력]
     elif st.session_state.step == 6:
         st.markdown('<div class="guide-box">💳 [카드 정보 입력]<br>스마트폰 화면에 카드 번호와 비밀번호를 적는 칸입니다.</div>', unsafe_allow_html=True)
         st.text_input("1. 카드 번호 16자리 예시 입력", "4571 - 1234 - **** - ****")
@@ -395,32 +425,80 @@ elif st.session_state.mode == "APP":
         with col_p: 
             if st.button("이전으로", key="app_b6_5"): st.session_state.step = 5; st.rerun()
         with col_n:
-            if st.button("온라인 결제 승인 완료 🔒", key="app_online_complete"): st.session_state.step = 7; st.rerun()
+            if st.button("온라인 카드 결제 승인 🔒", key="app_online_complete"): st.session_state.step = 7; st.rerun()
 
-    # [7단계: 모바일 앱 시나리오 최종 완료]
+    # [7단계: 모바일 앱 시나리오 최종 성공 완료 화면]
     elif st.session_state.step == 7:
         st.success("🎉 스마트폰 미션 최종 성공!")
         total = get_total_price()
         app_type = st.session_state.selected_biz
         
         if st.session_state.pay_method == "계좌이체":
-            st.markdown(f'<div class="guide-box" style="background-color:#E0F2FE;">[{app_type}] 등록된 본인 계좌에서 이체가 안전하게 완료되었습니다.<br>이체 총액: {total:,}원</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="guide-box" style="background-color:#DCFCE7;">[{app_type}] 온라인 카드 승인이 완료되었습니다!<br>이용 총액: {total:,}원</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="guide-box" style="background-color:#E0F2FE;">[{app_type}] 본인 은행 계좌에서 실시간 이체 처리가 끝났습니다.<br>인증 완료 총액: {total:,}원</div>', unsafe_allow_html=True)
+        elif st.session_state.pay_method == "온라인카드":
+            st.markdown(f'<div class="guide-box" style="background-color:#DCFCE7;">[{app_type}] 온라인 신용카드 승인이 안전하게 완료되었습니다!<br>결제 총액: {total:,}원</div>', unsafe_allow_html=True)
+        else: # 모바일 뱅킹 다이렉트 완료 분기
+            st.markdown(f'<div class="guide-box" style="background-color:#F3E8FF;">[모바일 뱅킹] 송금이 완벽하게 처리되었습니다.<br>자녀 통장 송금액: {total:,}원</div>', unsafe_allow_html=True)
             
-        st.write("인터넷 쇼핑과 버스 예약도 이제 폰으로 척척 하실 수 있습니다!")
+        st.write("주변 어르신이나 본인이 스스로 모바일 라이프를 즐길 수 있도록 계속 반복 연습해 보세요!")
         if st.button("대메뉴 초기화면으로 이동 🏠", key="app_finish"): st.session_state.mode = "MAIN"; st.rerun()
 
+    # ★ [8단계: 신설 - 모바일 뱅킹 전용 비밀번호 6자리 마킹 키패드 폼]
+    elif st.session_state.step == 8:
+        st.markdown('<div class="guide-box">🔑 [보안 비밀번호 입력]<br>은행 이체를 완료하기 위해 비밀번호 6자리를 누르세요.</div>', unsafe_allow_html=True)
+        
+        # 비밀번호 별(★) 모양 누적 시각화 표시
+        display_stars = " ".join(["★" for _ in st.session_state.bank_pass]) + " " + " ".join(["☆" for _ in range(6 - len(st.session_state.bank_pass))])
+        st.markdown(f"<h1 style='text-align:center; color:#6366F1;'>{display_stars}</h1>", unsafe_allow_html=True)
+        
+        # 0~9 가상 키패드 시뮬레이션
+        c_n1, c_n2, c_n3 = st.columns(3)
+        with c_n1: 
+            if st.button("1", key="num_1"): st.session_state.bank_pass += "1"; st.rerun()
+            if st.button("4", key="num_4"): st.session_state.bank_pass += "4"; st.rerun()
+            if st.button("7", key="num_7"): st.session_state.bank_pass += "7"; st.rerun()
+        with c_n2:
+            if st.button("2", key="num_2"): st.session_state.bank_pass += "2"; st.rerun()
+            if st.button("5", key="num_5"): st.session_state.bank_pass += "5"; st.rerun()
+            if st.button("8", key="num_8"): st.session_state.bank_pass += "8"; st.rerun()
+        with c_n3:
+            if st.button("3", key="num_3"): st.session_state.bank_pass += "3"; st.rerun()
+            if st.button("6", key="num_6"): st.session_state.bank_pass += "6"; st.rerun()
+            if st.button("9", key="num_9"): st.session_state.bank_pass += "9"; st.rerun()
+            
+        if st.button("0", key="num_0"): st.session_state.bank_pass += "0"; st.rerun()
+        
+        if len(st.session_state.bank_pass) >= 6:
+            speak("비밀번호 인증 성공, 송금이 완료됩니다.")
+            st.session_state.pay_method = "뱅킹다이렉트"
+            st.session_state.step = 7
+            st.rerun()
+            
+        st.markdown("---")
+        if st.button("지우고 다시 입력", key="num_clear"): st.session_state.bank_pass = ""; st.rerun()
 
-# --- 전 단계 음성 안내 연동 로직 ---
+    # ★ [9단계: 신설 - 쇼핑/예약 내에서 계좌이체 결제 시 계좌 입력창 가이드]
+    elif st.session_state.step == 9:
+        st.markdown('<div class="guide-box">🏦 [실시간 계좌이체 결제]<br>출금할 출금 은행과 통장 계좌번호를 적어주세요.</div>', unsafe_allow_html=True)
+        st.selectbox("내 통장 은행 선택", ["농협은행", "국민은행", "신한은행", "우체국"])
+        st.text_input("내 계좌번호 입력 예시", "110-567-890123")
+        st.caption("※ 암호나 공인인증서 대용으로 안전하게 승인 버튼을 누르시면 이체 처리됩니다.")
+        
+        col_p, col_n = st.columns(2)
+        with col_p: 
+            if st.button("이전으로", key="app_b9_5"): st.session_state.step = 5; st.rerun()
+        with col_n:
+            if st.button("계좌이체 결제 승인하기 🔒", key="app_transfer_done"): st.session_state.step = 7; st.rerun()
+
+
+# --- 음성 안내 자동 가이드 로직 ---
 if st.session_state.mode == "KIOSK":
-    if st.session_state.step == 2: speak("연습하고 싶으신 장소를 눌러주세요.")
-    elif st.session_state.step == 3: speak("음식을 누르고 아래 다음 버튼을 누르세요.")
-    elif st.session_state.step == 5: speak("현금, 카드, 삼성페이 중 결제 방식을 고르세요.")
+    if st.session_state.step == 2: speak("연습하고 싶으신 장소를 선택해 주세요.")
 elif st.session_state.mode == "APP":
-    if st.session_state.step == 2: speak("연습하고 싶으신 스마트폰 기능을 터치하세요.")
-    elif st.session_state.step == 3:
-        if st.session_state.selected_biz == "고속버스 예매": speak("출발지와 도착지, 시간을 차례대로 선택해 주세요.")
-        else: speak("실제 스마트폰 화면처럼 정보를 입력해 보세요.")
-    elif st.session_state.step == 5: speak("계좌이체와 신용카드 중 결제 방식을 선택하세요.")
-    elif st.session_state.step == 7: speak("스마트폰 미션을 성공적으로 마쳤습니다. 축하합니다.")
+    if st.session_state.step == 3 and st.session_state.selected_biz == "고속버스 예매":
+        if not st.session_state.bus_from: speak("출발지를 고르세요.")
+        elif not st.session_state.bus_to: speak("도착지를 고르세요.")
+        elif not st.session_state.bus_time: speak("시간을 고르세요.")
+        elif not st.session_state.bus_age: speak("나이 유형을 고르세요.")
+    elif st.session_state.step == 8: speak("앱 비밀번호 숫자 6자리를 차례대로 누르세요.")
+    elif st.session_state.step == 9: speak("출금할 은행과 계좌번호를 확인하신 후 승인을 누르세요.")
