@@ -1,7 +1,7 @@
 import streamlit as st
 
 # 1. 페이지 기본 설정 및 시니어 맞춤형 라이트 테마 강제 정의
-st.set_page_config(page_title="디지털 친구 - 시니어 맞춤형 교육 앱 v10.1", layout="centered")
+st.set_page_config(page_title="디지털 친구 - 시니어 맞춤형 교육 앱 v10.2", layout="centered")
 
 # 시스템 다크모드를 무시하고 밝고 선명한 디자인 유지
 st.markdown("""
@@ -233,7 +233,7 @@ elif st.session_state.mode == "KIOSK":
         
         c1, c2 = st.columns(2)
         with c1: 
-            # 문법 오류 발생 코드 줄바꿈 교정 완료
+            # 1줄로 결합되어 있던 문법 오류 완벽하게 줄바꿈 분리 수정
             if st.button("⬅ 장소 다시 고르기", key="k_b3_back"): 
                 st.session_state.step = 2
                 st.session_state.cart = {}
@@ -241,7 +241,7 @@ elif st.session_state.mode == "KIOSK":
         with c2:
             if st.button("다음 단계로 ➡", key="k_next_btn_3"):
                 if total > 0: st.session_state.step = 4; st.rerun()
-                else: st.warning("메뉴를 하나 이상 골라주셔야 합니다!")
+                else: st.warning("메뉴을 하나 이상 골라주셔야 합니다!")
 
     elif st.session_state.step == 4:
         st.markdown('<div class="guide-box">내가 고른 메뉴 확인창<br>고르신 음식을 확인하고 맞으면 결제를 누르세요.</div>', unsafe_allow_html=True)
@@ -255,7 +255,7 @@ elif st.session_state.mode == "KIOSK":
         with c1: 
             if st.button("⬅ 메뉴 다시 담기", key="k_b4_back"): st.session_state.step = 3; st.rerun()
         with c2:
-            # 문법 오류 발생 코드 줄바꿈 교정 완료
+            # 1줄로 결합되어 있던 문법 오류 완벽하게 줄바꿈 분리 수정 (image_90b845.png 에러 해결)
             if st.button("돈 내러 가기 (결제) ➡", key="k_pay_btn_4"): 
                 st.session_state.step = 5
                 st.rerun()
@@ -334,7 +334,11 @@ elif st.session_state.mode == "APP":
             c1, c2 = st.columns(2)
             with c1: 
                 if st.button("⬅ 이전으로", key="b_p_back"): st.session_state.step = 2; st.rerun()
-            with c2: if st.button("송금 확인하기 ➡", key="next_btn_bank"): st.session_state.step = 4; st.rerun()
+            with c2: 
+                # 1줄로 결합되어 있던 문법 오류 완벽하게 줄바꿈 분리 수정 (image_90c000.png 에러 해결)
+                if st.button("송금 확인하기 ➡", key="next_btn_bank"): 
+                    st.session_state.step = 4
+                    st.rerun()
 
         elif biz == "버스":
             st.markdown('<div class="guide-box">🚍 [1단계: 터미널 및 시간 선택]<br>출발지, 도착지, 시간을 각각 골라주세요.</div>', unsafe_allow_html=True)
