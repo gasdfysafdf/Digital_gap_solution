@@ -1,9 +1,8 @@
 import streamlit as st
 
 # 1. 페이지 기본 설정 및 시니어 맞춤형 라이트 테마 강제 정의
-st.set_page_config(page_title="디지털 친구 - 시니어 맞춤형 교육 앱 v10.2", layout="centered")
+st.set_page_config(page_title="디지털 친구 - 시니어 맞춤형 교육 앱 v10.3", layout="centered")
 
-# 시스템 다크모드를 무시하고 밝고 선명한 디자인 유지
 st.markdown("""
     <style>
     .stApp { background-color: #F7F6F0 !important; }
@@ -70,7 +69,7 @@ st.markdown("""
     }
     .stButton>button div p { color: #2D3748 !important; font-weight: bold !important; }
 
-    /* 다음/결제/시작 등 핵심 진행 버튼 (선명한 보라색) */
+    /* 핵심 진행 버튼 (선명한 보라색) */
     div.stButton>button[key*="start_btn"], div.stButton>button[key*="next_btn"], div.stButton>button[key*="pay_btn"], div.stButton>button[key*="complete_btn"] {
         background: #4C51BF !important;
         color: #FFFFFF !important;
@@ -116,6 +115,11 @@ if 'cart' not in st.session_state: st.session_state.cart = {}
 if 'pay_method' not in st.session_state: st.session_state.pay_method = ""
 if 'bank_pass' not in st.session_state: st.session_state.bank_pass = ""
 
+# 사용자가 입력한 송금 정보를 유지하기 위한 상태 변수 추가
+if 'input_bank_name' not in st.session_state: st.session_state.input_bank_name = "농협은행"
+if 'input_bank_account' not in st.session_state: st.session_state.input_bank_account = "302-1234-5678-90"
+if 'input_bank_money' not in st.session_state: st.session_state.input_bank_money = "50000"
+
 # --- 버스 예약 전용 상태 변수 ---
 if 'bus_from' not in st.session_state: st.session_state.bus_from = ""
 if 'bus_to' not in st.session_state: st.session_state.bus_to = ""
@@ -126,7 +130,6 @@ if 'bus_p_child' not in st.session_state: st.session_state.bus_p_child = 0
 if 'bus_p_senior' not in st.session_state: st.session_state.bus_p_senior = 0
 if 'bus_selected_seats' not in st.session_state: st.session_state.bus_selected_seats = []
 
-# 데이터베이스 정의
 KIOSK_DATA = {
     "🍔 패스트푸드점": {"일반 햄버거": 5000, "치즈버거": 6000, "불고기버거": 5500, "감자튀김": 2000, "콜라": 1500, "치킨너겟": 3000},
     "☕ 커피 전문점": {"아메리카노": 3000, "카페라떼": 3500, "따뜻한 쌍화차": 4500, "생강차": 4500, "단팥빵": 2500},
@@ -147,7 +150,13 @@ def get_total_price():
     if st.session_state.mode == "APP":
         if st.session_state.selected_biz == "쇼핑":
             return sum(SHOP_DATA.get(name, 0) * qty for name, qty in st.session_state.cart.items())
-        if st.session_state.selected_biz == "은행": return 50000
+        if st.session_state.selected_biz == "은행": 
+            # 사용자가 입력한 숫자를 가져와서 숫자로 변환 시도
+            try:
+                clean_money = "".join(filter(str.isdigit, st.session_state.input_bank_money))
+                return int(clean_money) if clean_money else 0
+            except:
+                return 50000
         if st.session_state.selected_biz == "버스":
             base = BUS_PRICE_TABLE.get(st.session_state.bus_to, 25000)
             total = (st.session_state.bus_p_adult * base + 
@@ -170,6 +179,9 @@ def reset_state():
     st.session_state.selected_biz = ""
     st.session_state.pay_method = ""
     st.session_state.bank_pass = ""
+    st.session_state.input_bank_name = "농협은행"
+    st.session_state.input_bank_account = "302-1234-5678-90"
+    st.session_state.input_bank_money = "50,000"
     st.session_state.bus_from = ""
     st.session_state.bus_to = ""
     st.session_state.bus_time = ""
@@ -233,7 +245,6 @@ elif st.session_state.mode == "KIOSK":
         
         c1, c2 = st.columns(2)
         with c1: 
-            # 1줄로 결합되어 있던 문법 오류 완벽하게 줄바꿈 분리 수정
             if st.button("⬅ 장소 다시 고르기", key="k_b3_back"): 
                 st.session_state.step = 2
                 st.session_state.cart = {}
@@ -255,7 +266,6 @@ elif st.session_state.mode == "KIOSK":
         with c1: 
             if st.button("⬅ 메뉴 다시 담기", key="k_b4_back"): st.session_state.step = 3; st.rerun()
         with c2:
-            # 1줄로 결합되어 있던 문법 오류 완벽하게 줄바꿈 분리 수정 (image_90b845.png 에러 해결)
             if st.button("돈 내러 가기 (결제) ➡", key="k_pay_btn_4"): 
                 st.session_state.step = 5
                 st.rerun()
@@ -284,7 +294,14 @@ elif st.session_state.mode == "KIOSK":
     elif st.session_state.step == 7:
         st.success("🎉 축하합니다! 주문에 성공하셨습니다.")
         total = get_total_price()
-        st.markdown(f'<div class="guide-box" style="background-color:#E6FFFA !important; border: 3px solid #319795;">주문이 완료되었습니다!<br>영수증과 번호표를 챙겨 가세요.<br>🧾 결제액: {total:,}원</div>', unsafe_allow_html=True)
+        
+        # 🛒 대형 마트일 때는 번호표 제거 문구 분기 처리 완료!
+        if st.session_state.selected_biz == "🛒 대형 마트":
+            finish_msg = f"계산이 완료되었습니다!<br>카트와 영수증을 챙겨 가세요.<br>🧾 결제액: {total:,}원"
+        else:
+            finish_msg = f"주문이 완료되었습니다!<br>영수증과 번호표를 챙겨 가세요.<br>🧾 결제액: {total:,}원"
+            
+        st.markdown(f'<div class="guide-box" style="background-color:#E6FFFA !important; border: 3px solid #319795;">{finish_msg}</div>', unsafe_allow_html=True)
         if st.button("🏠 처음 화면으로 이동하기", key="k_finish_btn_home"): st.session_state.mode = "MAIN"; st.rerun()
 
 
@@ -328,14 +345,22 @@ elif st.session_state.mode == "APP":
 
         elif biz == "은행":
             st.markdown('<div class="guide-box">🏦 [모바일 송금]<br>돈을 보낼 계좌 정보를 가상으로 선택하고 채워줍니다.</div>', unsafe_allow_html=True)
-            st.selectbox("1. 어디 은행으로 보낼까요?", ["농협은행", "국민은행", "신한은행", "우리은행", "우체국"])
-            st.text_input("2. 상대방 계좌번호를 확인하세요", "302-1234-5678-90")
-            st.text_input("3. 얼마를 보낼까요?", "50,000원")
+            
+            # 💡 사용자가 선택하고 입력한 정보가 실시간으로 반영되도록 상태 변수 연동 완료!
+            bank_list = ["농협은행", "국민은행", "신한은행", "우리은행", "우체국"]
+            try:
+                sel_idx = bank_list.index(st.session_state.input_bank_name)
+            except:
+                sel_idx = 0
+                
+            st.session_state.input_bank_name = st.selectbox("1. 어디 은행으로 보낼까요?", bank_list, index=sel_idx)
+            st.session_state.input_bank_account = st.text_input("2. 상대방 계좌번호를 확인하세요", st.session_state.input_bank_account)
+            st.session_state.input_bank_money = st.text_input("3. 얼마를 보낼까요? (숫자만 입력해 주세요)", st.session_state.input_bank_money)
+            
             c1, c2 = st.columns(2)
             with c1: 
                 if st.button("⬅ 이전으로", key="b_p_back"): st.session_state.step = 2; st.rerun()
             with c2: 
-                # 1줄로 결합되어 있던 문법 오류 완벽하게 줄바꿈 분리 수정 (image_90c000.png 에러 해결)
                 if st.button("송금 확인하기 ➡", key="next_btn_bank"): 
                     st.session_state.step = 4
                     st.rerun()
@@ -417,12 +442,11 @@ elif st.session_state.mode == "APP":
         st.markdown(f'<div class="guide-box">🚍 [3단계: 좌석 번호 직접 고르기]<br>빈 자리를 누르세요. 총 {total_need}석을 고르셔야 합니다.<br>(선택됨: {len(st.session_state.bus_selected_seats)} / {total_need}석)</div>', unsafe_allow_html=True)
         
         st.write("🚍 버스 앞쪽 (운전석)")
-        sold_seats = [3, 7, 12, 18, 22] # 선점된 매진 좌석 가상 정의
+        sold_seats = [3, 7, 12, 18, 22]
         
         for row in range(1, 10):
             cols = st.columns(4)
             
-            # 좌석 1
             s1 = (row - 1) * 3 + 1
             if s1 <= 28:
                 if s1 in sold_seats: cols[0].button(f"❌ {s1:02d}", key=f"s_{s1}", disabled=True)
@@ -433,7 +457,6 @@ elif st.session_state.mode == "APP":
                         if len(st.session_state.bus_selected_seats) < total_need: st.session_state.bus_selected_seats.append(s1); st.rerun()
                         else: st.warning("인원수만큼 이미 좌석을 다 선택하셨습니다.")
                         
-            # 좌석 2
             s2 = (row - 1) * 3 + 2
             if s2 <= 28:
                 if s2 in sold_seats: cols[1].button(f"❌ {s2:02d}", key=f"s_{s2}", disabled=True)
@@ -444,9 +467,8 @@ elif st.session_state.mode == "APP":
                         if len(st.session_state.bus_selected_seats) < total_need: st.session_state.bus_selected_seats.append(s2); st.rerun()
                         else: st.warning("인원수만큼 이미 좌석을 다 선택하셨습니다.")
             
-            cols[2].write("") # 중앙 통로 공간 공백 처리
+            cols[2].write("")
             
-            # 좌석 3 (1인 격리 우등석)
             s3 = (row - 1) * 3 + 3
             if s3 <= 28:
                 if s3 in sold_seats: cols[3].button(f"❌ {s3:02d}", key=f"s_{s3}", disabled=True)
@@ -487,8 +509,20 @@ elif st.session_state.mode == "APP":
         elif st.session_state.selected_biz == "쇼핑":
             for name, qty in st.session_state.cart.items():
                 st.markdown(f'<div class="info-card"><span>● {name} — {qty}개 ({SHOP_DATA[name]*qty:,}원)</span></div>', unsafe_allow_html=True)
-        elif st.session_state.selected_biz == "은행":
-            st.markdown('<div class="info-card">🏦 모바일 송금 내용<br><br>• 받는 계좌: 농협은행 302-1234-5678-90<br>• 송금 금액: 50,000원</div>', unsafe_allow_html=True)
+        elif st.session_state.selected_biz == "銀行" or st.session_state.selected_biz == "은행":
+            # 💡 사용자가 3단계에서 수정한 값이 여기에 동적으로 연동되어 출력됩니다!
+            try:
+                display_money = int("".join(filter(str.isdigit, st.session_state.input_bank_money)))
+            except:
+                display_money = 50000
+            st.markdown(f"""
+            <div class='info-card'>
+                🏦 모바일 송금 내용 확인<br><br>
+                • <b>받는 은행:</b> {st.session_state.input_bank_name}<br>
+                • <b>계좌 번호:</b> {st.session_state.input_bank_account}<br>
+                • <b>송금 금액:</b> {display_money:,}원
+            </div>
+            """, unsafe_allow_html=True)
 
         total = get_total_price()
         st.markdown(f'<div class="price-box">💰 최종 결제/송금 금액: {total:,}원</div>', unsafe_allow_html=True)
@@ -523,6 +557,8 @@ elif st.session_state.mode == "APP":
     elif st.session_state.step == 7:
         st.success("🎉 미션 성공! 완벽하게 마쳤습니다.")
         total = get_total_price()
+        
+        # 📱 앱 서비스(쇼핑/은행) 내에서도 "번호표"라는 말이 없도록 참 잘하셨습니다 문구 배치 완료!
         st.markdown(f'<div class="guide-box" style="background-color:#EBF8FF !important; border: 2px solid #63B3ED;">참 잘하셨습니다 어르신!<br>모든 스마트폰 미션이 성공적으로 처리되었습니다.<br>🧾 처리 총액: {total:,}원</div>', unsafe_allow_html=True)
         if st.button("🏠 처음 화면으로 이동하기", key="a_fin_btn_home"): st.session_state.mode = "MAIN"; st.rerun()
 
