@@ -1,7 +1,7 @@
 import streamlit as st
 
 # 1. 페이지 기본 설정 및 시니어 맞춤형 라이트 테마 강제 정의
-st.set_page_config(page_title="디지털 친구 - 시니어 맞춤형 교육 앱 v10.0", layout="centered")
+st.set_page_config(page_title="디지털 친구 - 시니어 맞춤형 교육 앱 v10.1", layout="centered")
 
 # 시스템 다크모드를 무시하고 밝고 선명한 디자인 유지
 st.markdown("""
@@ -233,6 +233,7 @@ elif st.session_state.mode == "KIOSK":
         
         c1, c2 = st.columns(2)
         with c1: 
+            # 문법 오류 발생 코드 줄바꿈 교정 완료
             if st.button("⬅ 장소 다시 고르기", key="k_b3_back"): 
                 st.session_state.step = 2
                 st.session_state.cart = {}
@@ -253,7 +254,11 @@ elif st.session_state.mode == "KIOSK":
         c1, c2 = st.columns(2)
         with c1: 
             if st.button("⬅ 메뉴 다시 담기", key="k_b4_back"): st.session_state.step = 3; st.rerun()
-        with c2: if st.button("돈 내러 가기 (결제) ➡", key="k_pay_btn_4"): st.session_state.step = 5; st.rerun()
+        with c2:
+            # 문법 오류 발생 코드 줄바꿈 교정 완료
+            if st.button("돈 내러 가기 (결제) ➡", key="k_pay_btn_4"): 
+                st.session_state.step = 5
+                st.rerun()
 
     elif st.session_state.step == 5:
         st.markdown('<div class="guide-box">결제 방법을 손가락으로 터치하세요.</div>', unsafe_allow_html=True)
