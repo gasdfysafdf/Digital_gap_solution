@@ -1,7 +1,7 @@
 import streamlit as st
 
 # 1. 페이지 기본 설정 및 시니어 맞춤형 라이트 테마 강제 정의
-st.set_page_config(page_title="디지털 친구 - 시니어 맞춤형 교육 앱 v9.0", layout="centered")
+st.set_page_config(page_title="디지털 친구 - 시니어 맞춤형 교육 앱 v10.0", layout="centered")
 
 # 시스템 다크모드를 무시하고 밝고 선명한 디자인 유지
 st.markdown("""
@@ -70,10 +70,6 @@ st.markdown("""
     }
     .stButton>button div p { color: #2D3748 !important; font-weight: bold !important; }
 
-    /* 좌석 전용 버튼 스타일 (선택됨 / 일반 / 매진) */
-    .seat-selected { background-color: #4C51BF !important; color: white !important; }
-    .seat-sold { background-color: #E53E3E !important; color: white !important; opacity: 0.6; }
-
     /* 다음/결제/시작 등 핵심 진행 버튼 (선명한 보라색) */
     div.stButton>button[key*="start_btn"], div.stButton>button[key*="next_btn"], div.stButton>button[key*="pay_btn"], div.stButton>button[key*="complete_btn"] {
         background: #4C51BF !important;
@@ -120,18 +116,17 @@ if 'cart' not in st.session_state: st.session_state.cart = {}
 if 'pay_method' not in st.session_state: st.session_state.pay_method = ""
 if 'bank_pass' not in st.session_state: st.session_state.bank_pass = ""
 
-# --- 버스 예약 전용 상태 변수 대폭 확장 ---
+# --- 버스 예약 전용 상태 변수 ---
 if 'bus_from' not in st.session_state: st.session_state.bus_from = ""
 if 'bus_to' not in st.session_state: st.session_state.bus_to = ""
 if 'bus_time' not in st.session_state: st.session_state.bus_time = ""
-if 'bus_total_seats' not in st.session_state: st.session_state.bus_total_seats = 1
 if 'bus_p_adult' not in st.session_state: st.session_state.bus_p_adult = 0
 if 'bus_p_teen' not in st.session_state: st.session_state.bus_p_teen = 0
 if 'bus_p_child' not in st.session_state: st.session_state.bus_p_child = 0
 if 'bus_p_senior' not in st.session_state: st.session_state.bus_p_senior = 0
 if 'bus_selected_seats' not in st.session_state: st.session_state.bus_selected_seats = []
 
-# 데이터베이스 기본 정의
+# 데이터베이스 정의
 KIOSK_DATA = {
     "🍔 패스트푸드점": {"일반 햄버거": 5000, "치즈버거": 6000, "불고기버거": 5500, "감자튀김": 2000, "콜라": 1500, "치킨너겟": 3000},
     "☕ 커피 전문점": {"아메리카노": 3000, "카페라떼": 3500, "따뜻한 쌍화차": 4500, "생강차": 4500, "단팥빵": 2500},
@@ -144,7 +139,6 @@ SHOP_DATA = {
     "🍎 상주 꿀사과 1박스": 29000, "🍊 영동 곶감 세트": 32000, "🍯 6년근 홍삼정 스틱": 55000
 }
 
-# 고속버스 기본 가격표 (서울 출발 기준 성인 요금)
 BUS_PRICE_TABLE = {
     "부산종합": 36000, "대구한진": 28000, "울산": 32000, "전주": 20000, "강릉": 23000
 }
@@ -179,7 +173,6 @@ def reset_state():
     st.session_state.bus_from = ""
     st.session_state.bus_to = ""
     st.session_state.bus_time = ""
-    st.session_state.bus_total_seats = 1
     st.session_state.bus_p_adult = 0
     st.session_state.bus_p_teen = 0
     st.session_state.bus_p_child = 0
@@ -239,7 +232,11 @@ elif st.session_state.mode == "KIOSK":
         st.markdown(f'<div class="price-box">💰 현재 담은 총 금액: {total:,}원</div>', unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
-        with c1: if st.button("⬅ 장소 다시 고르기", key="k_b3_back"): st.session_state.step = 2; st.session_state.cart={}; st.rerun()
+        with c1: 
+            if st.button("⬅ 장소 다시 고르기", key="k_b3_back"): 
+                st.session_state.step = 2
+                st.session_state.cart = {}
+                st.rerun()
         with c2:
             if st.button("다음 단계로 ➡", key="k_next_btn_3"):
                 if total > 0: st.session_state.step = 4; st.rerun()
@@ -254,7 +251,8 @@ elif st.session_state.mode == "KIOSK":
         st.markdown(f'<div class="price-box">💰 최종 결제할 금액: {total:,}원</div>', unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
-        with c1: if st.button("⬅ 메뉴 다시 담기", key="k_b4_back"): st.session_state.step = 3; st.rerun()
+        with c1: 
+            if st.button("⬅ 메뉴 다시 담기", key="k_b4_back"): st.session_state.step = 3; st.rerun()
         with c2: if st.button("돈 내러 가기 (결제) ➡", key="k_pay_btn_4"): st.session_state.step = 5; st.rerun()
 
     elif st.session_state.step == 5:
@@ -281,7 +279,7 @@ elif st.session_state.mode == "KIOSK":
     elif st.session_state.step == 7:
         st.success("🎉 축하합니다! 주문에 성공하셨습니다.")
         total = get_total_price()
-        st.markdown(f'<div class="guide-box" style="background-color:#E6FFFA !important; border: 3px solid #319795;">주문이 완료되었습니다!<br>영수증 and 번호표를 챙겨 가세요.<br>🧾 결제액: {total:,}원</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="guide-box" style="background-color:#E6FFFA !important; border: 3px solid #319795;">주문이 완료되었습니다!<br>영수증과 번호표를 챙겨 가세요.<br>🧾 결제액: {total:,}원</div>', unsafe_allow_html=True)
         if st.button("🏠 처음 화면으로 이동하기", key="k_finish_btn_home"): st.session_state.mode = "MAIN"; st.rerun()
 
 
@@ -306,7 +304,6 @@ elif st.session_state.mode == "APP":
     elif st.session_state.step == 3:
         biz = st.session_state.selected_biz
         
-        # --- [스마트폰 앱 - 쇼핑 기능] ---
         if biz == "쇼핑":
             st.markdown('<div class="guide-box">🛍️ [인터넷 쇼핑몰]<br>원하는 산지직송 상품을 장바구니에 담으세요.</div>', unsafe_allow_html=True)
             for name, pr in SHOP_DATA.items():
@@ -317,42 +314,39 @@ elif st.session_state.mode == "APP":
             total = get_total_price()
             st.markdown(f'<div class="price-box">🛒 현재 장바구니 합계: {total:,}원</div>', unsafe_allow_html=True)
             c1, c2 = st.columns(2)
-            with c1: if st.button("⬅ 메뉴판 나가기", key="s_p_back"): st.session_state.step = 2; st.session_state.cart={}; st.rerun()
+            with c1: 
+                if st.button("⬅ 메뉴판 나가기", key="s_p_back"): st.session_state.step = 2; st.session_state.cart={}; st.rerun()
             with c2:
                 if st.button("주문하러 가기 ➡", key="next_btn_shop"):
                     if total > 0: st.session_state.step = 4; st.rerun()
                     else: st.warning("물건을 최소 1개 이상 담아주세요.")
 
-        # --- [스마트폰 앱 - 은행 송금 기능] ---
         elif biz == "은행":
             st.markdown('<div class="guide-box">🏦 [모바일 송금]<br>돈을 보낼 계좌 정보를 가상으로 선택하고 채워줍니다.</div>', unsafe_allow_html=True)
             st.selectbox("1. 어디 은행으로 보낼까요?", ["농협은행", "국민은행", "신한은행", "우리은행", "우체국"])
             st.text_input("2. 상대방 계좌번호를 확인하세요", "302-1234-5678-90")
             st.text_input("3. 얼마를 보낼까요?", "50,000원")
             c1, c2 = st.columns(2)
-            with c1: if st.button("⬅ 이전으로", key="b_p_back"): st.session_state.step = 2; st.rerun()
+            with c1: 
+                if st.button("⬅ 이전으로", key="b_p_back"): st.session_state.step = 2; st.rerun()
             with c2: if st.button("송금 확인하기 ➡", key="next_btn_bank"): st.session_state.step = 4; st.rerun()
 
-        # --- [스마트폰 앱 - 고속버스 예약 기능 대폭 확장] ---
         elif biz == "버스":
-            st.markdown('<div class="guide-box">🚍 [1단계: 터미널 및 시간 선택]<br>원하시는 여정과 시간을 넓은 선택지에서 골라보세요.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="guide-box">🚍 [1단계: 터미널 및 시간 선택]<br>출발지, 도착지, 시간을 각각 골라주세요.</div>', unsafe_allow_html=True)
             
-            # 출발지 목록 확대
             st.write("📍 **1. 출발 터미널을 고르세요**")
             from_list = ["서울경부", "동서울", "인천", "대전복합", "광주종합"]
             c_f = st.columns(len(from_list))
             for idx, f_name in enumerate(from_list):
                 if c_f[idx].button(f_name, key=f"f_{f_name}"): st.session_state.bus_from = f_name; st.rerun()
             
-            # 도착지 목록 확대
             st.write("📍 **2. 도착 터미널을 고르세요**")
             to_list = ["부산종합", "대구한진", "울산", "전주", "강릉"]
             c_t = st.columns(len(to_list))
             for idx, t_name in enumerate(to_list):
                 if c_t[idx].button(t_name, key=f"t_{t_name}"): st.session_state.bus_to = t_name; st.rerun()
 
-            # 여정 안내창
-            st.info(f"👉 나의 선택: [ {st.session_state.bus_from if st.session_state.bus_from else '...'} ] 에서 출발  ➡  [ {st.session_state.bus_to if st.session_state.bus_to else '...'} ] 도착")
+            st.info(f"👉 나의 선택: [ {st.session_state.bus_from if st.session_state.bus_from else '...'} ] 출발 ➡ [ {st.session_state.bus_to if st.session_state.bus_to else '...'} ] 도착")
 
             if st.session_state.bus_from and st.session_state.bus_to:
                 st.write("⏰ **3. 버스 출발 시간을 고르세요**")
@@ -362,39 +356,41 @@ elif st.session_state.mode == "APP":
                     if c_time[idx%3].button(t_val, key=f"time_{idx}"): st.session_state.bus_time = t_val; st.rerun()
                 
                 if st.session_state.bus_time:
-                    st.success(f"정해진 여정: {st.session_state.bus_from} ➡ {st.session_state.bus_to} ({st.session_state.bus_time} 출발)")
-                    if st.button("인원 및 좌석 선택하러 가기 ➡", key="next_btn_bus_s1"): st.session_state.step = 10; st.rerun() # 10번 전용 인원창으로 이동
+                    st.success(f"정해진 여정: {st.session_state.bus_from} ➡ {st.session_state.bus_to} ({st.session_state.bus_time})")
+                    if st.button("인원 및 좌석 선택하러 가기 ➡", key="next_btn_bus_s1"): st.session_state.step = 10; st.rerun()
 
             if st.button("🔄 처음부터 다시 고르기", key="bus_reset_all"): reset_state(); st.session_state.selected_biz="버스"; st.rerun()
 
-    # --- [버스 전용 추가 단계: 인원수 및 연령별 상세 설정] ---
+    # --- [버스 상세 인원수 설정 단계] ---
     elif st.session_state.step == 10:
-        st.markdown('<div class="guide-box">🚍 [2단계: 탑승 인원수 설정]<br>총 몇 명이 타는지 연령별로 인원수를 더해 주세요.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="guide-box">🚍 [2단계: 탑승 인원수 설정]<br>같이 타실 분들의 연령별 인원을 정해주세요.</div>', unsafe_allow_html=True)
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.markdown("**어른 (성인)**")
-            if st.button("➕ 어른 추가", key="pa_up"): st.session_state.bus_p_adult += 1; st.rerun()
-            if st.button("➖ 어른 감소", key="pa_dn"): st.session_state.bus_p_adult = max(0, st.session_state.bus_p_adult - 1); st.rerun()
+            st.markdown(f"<h3 style='text-align:center;'>{st.session_state.bus_p_adult}명</h3>", unsafe_allow_html=True)
+            if st.button("➕ 추가", key="pa_up"): st.session_state.bus_p_adult += 1; st.rerun()
+            if st.button("➖ 감소", key="pa_dn"): st.session_state.bus_p_adult = max(0, st.session_state.bus_p_adult - 1); st.rerun()
         with col2:
-            st.markdown("**청소년 (학생)**")
-            if st.button("➕ 청소년 추가", key="pt_up"): st.session_state.bus_p_teen += 1; st.rerun()
-            if st.button("➖ 청소년 감소", key="pt_dn"): st.session_state.bus_p_teen = max(0, st.session_state.bus_p_teen - 1); st.rerun()
+            st.markdown("**청소년**")
+            st.markdown(f"<h3 style='text-align:center;'>{st.session_state.bus_p_teen}명</h3>", unsafe_allow_html=True)
+            if st.button("➕ 추가", key="pt_up"): st.session_state.bus_p_teen += 1; st.rerun()
+            if st.button("➖ 감소", key="pt_dn"): st.session_state.bus_p_teen = max(0, st.session_state.bus_p_teen - 1); st.rerun()
         with col3:
-            st.markdown("**어린이 (아동)**")
-            if st.button("➕ 아동 추가", key="pc_up"): st.session_state.bus_p_child += 1; st.rerun()
-            if st.button("➖ 아동 감소", key="pc_dn"): st.session_state.bus_p_child = max(0, st.session_state.bus_p_child - 1); st.rerun()
+            st.markdown("**어린이**")
+            st.markdown(f"<h3 style='text-align:center;'>{st.session_state.bus_p_child}명</h3>", unsafe_allow_html=True)
+            if st.button("➕ 추가", key="pc_up"): st.session_state.bus_p_child += 1; st.rerun()
+            if st.button("➖ 감소", key="pc_dn"): st.session_state.bus_p_child = max(0, st.session_state.bus_p_child - 1); st.rerun()
         with col4:
             st.markdown("**어르신 (경로)**")
-            if st.button("➕ 어르신 추가", key="ps_up"): st.session_state.bus_p_senior += 1; st.rerun()
-            if st.button("➖ 어르신 감소", key="ps_dn"): st.session_state.bus_p_senior = max(0, st.session_state.bus_p_senior - 1); st.rerun()
+            st.markdown(f"<h3 style='text-align:center;'>{st.session_state.bus_p_senior}명</h3>", unsafe_allow_html=True)
+            if st.button("➕ 추가", key="ps_up"): st.session_state.bus_p_senior += 1; st.rerun()
+            if st.button("➖ 감소", key="ps_dn"): st.session_state.bus_p_senior = max(0, st.session_state.bus_p_senior - 1); st.rerun()
 
-        # 인원 요약
         total_p = st.session_state.bus_p_adult + st.session_state.bus_p_teen + st.session_state.bus_p_child + st.session_state.bus_p_senior
         st.markdown(f"""
         <div class='info-card' style='text-align:center;'>
-            선택된 총 인원: <span style='color:#4C51BF; font-size:26px;'>{total_p}명</span><br>
-            (어른 {st.session_state.bus_p_adult}명 / 청소년 {st.session_state.bus_p_teen}명 / 아동 {st.session_state.bus_p_child}명 / 어르신 {st.session_state.bus_p_senior}명)
+            선택된 총 탑승 인원: <span style='color:#4C51BF; font-size:26px;'>{total_p}명</span>
         </div>
         """, unsafe_allow_html=True)
         
@@ -402,23 +398,22 @@ elif st.session_state.mode == "APP":
         with c1: 
             if st.button("⬅ 노선 다시 고르기", key="b_to_s3"): st.session_state.step = 3; st.rerun()
         with c2:
-            if st.button("좌석 직접 고르러 가기 ➡", key="next_btn_bus_seat"):
+            if st.button("좌석 고르러 가기 ➡", key="next_btn_bus_seat"):
                 if total_p > 0: st.session_state.step = 11; st.rerun()
                 else: st.warning("최소 1명 이상 인원을 추가하셔야 합니다!")
 
-    # --- [버스 전용 추가 단계: 28석 대형 좌석표 선택] ---
+    # --- [버스 우등 28석 대형 좌석표 선택] ---
     elif st.session_state.step == 11:
         total_need = st.session_state.bus_p_adult + st.session_state.bus_p_teen + st.session_state.bus_p_child + st.session_state.bus_p_senior
-        st.markdown(f'<div class="guide-box">🚍 [3단계: 좌석 번호 직접 고르기]<br>빈 좌석을 누르세요. 총 {total_need}석을 선택하셔야 합니다.<br>(선택됨: {len(st.session_state.bus_selected_seats)} / {total_need}석)</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="guide-box">🚍 [3단계: 좌석 번호 직접 고르기]<br>빈 자리를 누르세요. 총 {total_need}석을 고르셔야 합니다.<br>(선택됨: {len(st.session_state.bus_selected_seats)} / {total_need}석)</div>', unsafe_allow_html=True)
         
-        # 가상의 우등버스 28인승 좌석 배치도 만들기
         st.write("🚍 버스 앞쪽 (운전석)")
-        sold_seats = [3, 7, 12, 18, 22] # 가상 매진 좌석
+        sold_seats = [3, 7, 12, 18, 22] # 선점된 매진 좌석 가상 정의
         
-        for row in range(1, 10): # 9줄 배치
-            cols = st.columns(4) # 왼쪽 2자리, 통로, 오른쪽 1자리 구조 시뮬레이션
+        for row in range(1, 10):
+            cols = st.columns(4)
             
-            # 좌석 1 (창가)
+            # 좌석 1
             s1 = (row - 1) * 3 + 1
             if s1 <= 28:
                 if s1 in sold_seats: cols[0].button(f"❌ {s1:02d}", key=f"s_{s1}", disabled=True)
@@ -427,9 +422,9 @@ elif st.session_state.mode == "APP":
                 else:
                     if cols[0].button(f"💺 {s1:02d}", key=f"s_{s1}"):
                         if len(st.session_state.bus_selected_seats) < total_need: st.session_state.bus_selected_seats.append(s1); st.rerun()
-                        else: st.warning("이미 설정한 인원수만큼 좌석을 다 고르셨습니다.")
+                        else: st.warning("인원수만큼 이미 좌석을 다 선택하셨습니다.")
                         
-            # 좌석 2 (복도석)
+            # 좌석 2
             s2 = (row - 1) * 3 + 2
             if s2 <= 28:
                 if s2 in sold_seats: cols[1].button(f"❌ {s2:02d}", key=f"s_{s2}", disabled=True)
@@ -438,12 +433,11 @@ elif st.session_state.mode == "APP":
                 else:
                     if cols[1].button(f"💺 {s2:02d}", key=f"s_{s2}"):
                         if len(st.session_state.bus_selected_seats) < total_need: st.session_state.bus_selected_seats.append(s2); st.rerun()
-                        else: st.warning("이미 설정한 인원수만큼 좌석을 다 고르셨습니다.")
+                        else: st.warning("인원수만큼 이미 좌석을 다 선택하셨습니다.")
             
-            # 중간 통로 표현 공백
-            cols[2].write("")
+            cols[2].write("") # 중앙 통로 공간 공백 처리
             
-            # 좌석 3 (우측 1인 단독석)
+            # 좌석 3 (1인 격리 우등석)
             s3 = (row - 1) * 3 + 3
             if s3 <= 28:
                 if s3 in sold_seats: cols[3].button(f"❌ {s3:02d}", key=f"s_{s3}", disabled=True)
@@ -452,30 +446,33 @@ elif st.session_state.mode == "APP":
                 else:
                     if cols[3].button(f"💺 {s3:02d}", key=f"s_{s3}"):
                         if len(st.session_state.bus_selected_seats) < total_need: st.session_state.bus_selected_seats.append(s3); st.rerun()
-                        else: st.warning("이미 설정한 인원수만큼 좌석을 다 고르셨습니다.")
+                        else: st.warning("인원수만큼 이미 좌석을 다 선택하셨습니다.")
 
         st.markdown(f"<div class='price-box'>💵 자동 계산된 총 버스 요금: {get_total_price():,}원</div>", unsafe_allow_html=True)
         
         c1, c2 = st.columns(2)
         with c1: 
-            if st.button("⬅ 인원수 다시 변경", key="b_to_s10"): st.session_state.bus_selected_seats=[]; st.session_state.step = 10; st.rerun()
+            if st.button("⬅ 인원수 다시 변경", key="b_to_s10"): 
+                st.session_state.bus_selected_seats = []
+                st.session_state.step = 10
+                st.rerun()
         with c2:
             if st.button("예약 확인창으로 ➡", key="next_btn_bus_done"):
                 if len(st.session_state.bus_selected_seats) == total_need: st.session_state.step = 4; st.rerun()
-                else: st.error(f"인원수에 맞게 좌석을 {total_need}개 전부 선택해 주세요.")
+                else: st.error(f"인원수에 맞게 좌석을 {total_need}개 전부 고르셔야 다음으로 넘어갑니다.")
 
-    # --- [스마트폰 앱 공통 - 4단계: 최종 신청 내용 최종 확인] ---
+    # --- [스마트폰 앱 공통 - 최종 신청 내역 확인] ---
     elif st.session_state.step == 4:
-        st.markdown('<div class="guide-box">내가 신청한 예약/주문 내용이 전부 맞는지 확인하세요.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="guide-box">내가 신청한 내용이 전부 맞는지 확인하세요.</div>', unsafe_allow_html=True)
         
         if st.session_state.selected_biz == "버스":
             st.markdown(f"""
             <div class='info-card'>
-                🚌 고속버스 승차권 정보<br><br>
+                🚌 고속버스 승차권 정보 확인<br><br>
                 • <b>구간:</b> {st.session_state.bus_from} 출발 ➡ {st.session_state.bus_to} 도착<br>
                 • <b>시간:</b> {st.session_state.bus_time}<br>
                 • <b>선택 좌석:</b> {", ".join([f"{x}번" for x in st.session_state.bus_selected_seats])}<br>
-                • <b>인원:</b> 어른{st.session_state.bus_p_adult} / 청소년{st.session_state.bus_p_teen} / 아동{st.session_state.bus_p_child} / 경로{st.session_state.bus_p_senior}
+                • <b>선택 인원:</b> 성인 {st.session_state.bus_p_adult}명 / 청소년 {st.session_state.bus_p_teen}명 / 아동 {st.session_state.bus_p_child}명 / 경로 {st.session_state.bus_p_senior}명
             </div>
             """, unsafe_allow_html=True)
         elif st.session_state.selected_biz == "쇼핑":
@@ -489,7 +486,12 @@ elif st.session_state.mode == "APP":
         
         c1, c2 = st.columns(2)
         with c1: 
-            if st.button("⬅ 처음부터 다시 고르기", key="a_b4_back"): reset_state(); st.session_state.selected_biz=st.session_state.selected_biz; st.session_state.step = 3; st.rerun()
+            if st.button("⬅ 처음부터 다시 고르기", key="a_b4_back"): 
+                biz_save = st.session_state.selected_biz
+                reset_state()
+                st.session_state.selected_biz = biz_save
+                st.session_state.step = 3
+                st.rerun()
         with c2:
             if st.session_state.selected_biz == "은행":
                 if st.button("비밀번호 입력하기 🔑", key="next_btn_pass"): st.session_state.step = 8; st.rerun()
