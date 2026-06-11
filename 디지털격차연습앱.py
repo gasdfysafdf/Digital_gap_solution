@@ -1,9 +1,9 @@
 import streamlit as st
 
 # 1. 페이지 기본 설정 및 시니어 맞춤형 프리미엄 라이트 테마 정의
-st.set_page_config(page_title="디지털 친구 v12.0 - 논산시 실버 디지털 문해 교육 앱", layout="centered")
+st.set_page_config(page_title="디지털 친구 v12.1 - 논산시 실버 디지털 문해 교육 앱", layout="centered")
 
-# 전역 폰트 크기 및 상태 기본값 정의 (가장 먼저 수행)
+# 전역 상태 기본값 정의
 if 'font_size' not in st.session_state: st.session_state.font_size = "large"
 if 'mode' not in st.session_state: st.session_state.mode = "MAIN" 
 if 'step' not in st.session_state: st.session_state.step = 1
@@ -43,6 +43,23 @@ st.markdown(f"""
     html, body, [data-testid="stWidgetLabel"] p, h1, h2, h3, p, span {{
         font-family: 'Nanum Gothic', sans-serif !important;
         color: #1F2937 !important;
+    }}
+
+    /* 🚨 [긴급 패치] 사이드바 내부의 모든 글씨 색상을 가장 어둡고 선명한 색으로 강제 지정 */
+    [data-testid="stSidebar"] {{
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #E5E7EB;
+    }}
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {{
+        color: #111827 !important;
+        font-weight: bold !important;
+    }}
+    /* 사이드바 라디오 버튼 텍스트 가시성 보정 */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
+        color: #111827 !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
     }}
 
     /* 스마트폰 내부 화면 형태의 프레임워크 디자인 구성 */
@@ -193,10 +210,11 @@ SHOP_DATA = {
 }
 BUS_PRICE_TABLE = {"서울경부": 15000, "부산종합": 32000, "대구한진": 26000, "대전복합": 6000}
 
-# 오디오 및 가상 연동 함수
+# 오디오 및 가상 연동 함수 (사이드바에 새로 추가된 속도 제어 연동)
 def speak(text):
     if st.session_state.get('voice_active', True):
-        js_code = f"<script>var msg = new SpeechSynthesisUtterance('{text}'); msg.lang = 'ko-KR'; msg.rate = 0.9; window.speechSynthesis.speak(msg);</script>"
+        v_speed = st.session_state.get('voice_speed', 0.85)
+        js_code = f"<script>var msg = new SpeechSynthesisUtterance('{text}'); msg.lang = 'ko-KR'; msg.rate = {v_speed}; window.speechSynthesis.speak(msg);</script>"
         st.components.v1.html(js_code, height=0)
 
 def get_total_price():
@@ -232,6 +250,14 @@ def reset_state():
     st.session_state.bus_p_senior = 0
     st.session_state.bus_selected_seats = []
 
+def draw_step_bar(current_step):
+    html = '<div class="step-indicator">'
+    for i in range(1, 8):
+        active_class = "active" if i <= current_step else ""
+        html += f'<div class="step-dot {active_class}"></div>'
+    html += '</div>'
+    st.markdown(html, unsafe_allow_html=True)
+
 # --- 👑 1. SDGs 고정 배너 명시 ---
 st.markdown("""
 <div class="sdgs-banner">
@@ -241,10 +267,14 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- 🔍 2. 접근성 제어 사이드바 톱니바퀴 영역 ---
+# --- 🔍 2. 접근성 제어 사이드바 영역 (글씨 색상 완전 수정완료) ---
 with st.sidebar:
     st.header("⚙️ 스마트 가이드 설정")
     st.session_state.voice_active = st.checkbox("🔊 음성 가이드 활성화", value=True)
+    
+    # [새로운 기능] 말하는 속도 제어 슬라이더 추가
+    st.session_state.voice_speed = st.slider("🐢 말하기 속도 조절", min_value=0.5, max_value=1.2, value=0.85, step=0.05)
+    
     f_choice = st.radio("👵 글씨 크기 선택", ["크게 보기", "보통 보기"])
     st.session_state.font_size = "large" if f_choice == "크게 보기" else "normal"
     st.markdown("---")
@@ -330,6 +360,11 @@ elif st.session_state.mode == "KIOSK":
             st.session_state.pay_method = "현금"; st.session_state.step = 7; st.rerun()
         if st.button("💳 카드 결제 (신용/체크카드 투입)", key="k_pay_card"):
             st.session_state.pay_method = "카드"; st.session_state.step = 6; speak("카드를 끝까지 투입구에 넣어주세요."); st.rerun()
+        
+        # 💡 [지역 화폐 결제 수단 추가 고도화]
+        if st.button("📱 논산사랑상품권 결제 (지역화폐 QR/바코드 태그)", key="k_pay_nonsan"):
+            st.session_state.pay_method = "지역화폐"; st.session_state.step = 6; speak("화면 하단 리더기에 상품권 바코드를 대주세요."); st.rerun()
+            
         if st.button("📱 스마트폰 삼성페이 태그", key="k_pay_nfc"):
             st.session_state.pay_method = "간편결제"; st.session_state.step = 6; speak("핸드폰 뒷면을 리더기에 대주세요."); st.rerun()
         if st.button("⬅ 이전으로", key="k_b5_back"): st.session_state.step = 4; st.rerun()
@@ -339,6 +374,9 @@ elif st.session_state.mode == "KIOSK":
             st.markdown('<div class="guide-box">카드를 방향에 맞춰 깊숙이 넣어주세요.</div>', unsafe_allow_html=True)
             st.image("https://img.freepik.com/free-vector/pos-terminal-inserted-credit-card-cartoon-illustration_107791-3860.jpg?w=500", use_container_width=True)
             if st.button("카드를 꽂았습니다 💳", key="k_complete_btn_card"): st.session_state.step = 7; st.rerun()
+        elif st.session_state.pay_method == "지역화폐":
+            st.markdown('<div class="guide-box">스마트폰 논산사랑 상품권 앱의 바코드를<br>기계 아래쪽 불빛이 나오는 곳에 가까이 대어 주세요!</div>', unsafe_allow_html=True)
+            if st.button("바코드를 스캔했습니다 📱", key="k_complete_btn_nonsan"): st.session_state.step = 7; speak("성공적으로 상품권 결제가 처리되었습니다."); st.rerun()
         elif st.session_state.pay_method == "간편결제":
             st.markdown('<div class="guide-box">스마트폰 뒷면을 기계 중앙 카드 표시판에 대세요.</div>', unsafe_allow_html=True)
             st.image("https://img.freepik.com/free-vector/contactless-payment-concept-illustration_114360-6395.jpg?w=500", use_container_width=True)
@@ -349,11 +387,9 @@ elif st.session_state.mode == "KIOSK":
         st.success("🎉 미션 성공! 완벽하게 주문하셨습니다.")
         total = get_total_price()
         
-        # 데이터 업데이트
         st.session_state.stat_total_money += total
         st.session_state.stat_success_count += 1
         
-        # 🛒 대형 마트 및 병원 무인기 전 기기 번호표 완벽 분기 수정완료
         if "마트" in st.session_state.selected_biz:
             finish_msg = f"계산이 완료되었습니다!<br>영수증을 확인하시고 카트 안의 물건을 챙기세요.<br>🧾 결제금액: {total:,}원"
         elif "병원" in st.session_state.selected_biz:
@@ -363,7 +399,6 @@ elif st.session_state.mode == "KIOSK":
             
         st.markdown(f'<div class="guide-box" style="background-color:#F0FDF4 !important; border: 3px solid #10B981;">{finish_msg}</div>', unsafe_allow_html=True)
         
-        # 📈 4. 발표 극찬용 실시간 SDGs 임팩트 리포트 화면 노출
         st.markdown(f"""
         <div class="report-box">
             <h4>📊 오늘 나의 디지털 실력 성장 리포트 (SDGs 4 & 10)</h4>
@@ -390,7 +425,7 @@ elif st.session_state.mode == "APP":
     elif st.session_state.step == 2:
         st.markdown('<div class="guide-box">연습하실 스마트폰 가상 앱을 터치하세요.</div>', unsafe_allow_html=True)
         if st.button("🛍️ 1. 온라인 쇼핑 앱 (논산 특산물 사이버 시장)", key="a_biz_shop"): st.session_state.selected_biz = "쇼핑"; st.session_state.step = 3; st.rerun()
-        if st.button("🏦 2. NH 농협 뱅킹 앱 (자녀에게 가상 돈 보내기)", key="a_biz_bank"): st.session_state.selected_biz = "銀行" if 'selected_biz' in st.session_state and st.session_state.selected_biz == "은행" else "은행"; st.session_state.step = 3; st.rerun()
+        if st.button("🏦 2. NH 농협 뱅킹 앱 (자녀에게 가상 돈 보내기)", key="a_biz_bank"): st.session_state.selected_biz = "은행"; st.session_state.step = 3; st.rerun()
         if st.button("📅 3. 고속버스 티켓 예매 앱 (영외면회 및 역귀성용)", key="a_biz_bus"): st.session_state.selected_biz = "버스"; st.session_state.step = 3; st.rerun()
         if st.button("⬅ 뒤로가기", key="a_b2_back"): st.session_state.step = 1; st.rerun()
 
@@ -414,14 +449,12 @@ elif st.session_state.mode == "APP":
                     if total > 0: st.session_state.step = 4; speak("주문 내역을 검토하세요."); st.rerun()
                     else: st.warning("물건을 최소 1개 이상 골라주세요.")
 
-        elif biz == "은행" or biz == "銀行":
+        elif biz == "은행":
             st.markdown('<div class="guide-box">🏦 [NH 가상 모바일 뱅킹]<br>상대방 정보와 금액을 입력창에 적어주세요.</div>', unsafe_allow_html=True)
-            
             bank_list = ["농협은행", "국민은행", "신한은행", "우리은행", "우체국"]
             try: sel_idx = bank_list.index(st.session_state.input_bank_name)
             except: sel_idx = 0
                 
-            # 💡 완벽한 실시간 수정 양방향 바인딩 구조 연동 완료
             st.session_state.input_bank_name = st.selectbox("1. 어디 은행으로 돈을 보낼까요?", bank_list, index=sel_idx)
             st.session_state.input_bank_account = st.text_input("2. 상대방의 계좌번호를 확인 및 수정하세요.", st.session_state.input_bank_account)
             st.session_state.input_bank_money = st.text_input("3. 송금할 금액을 적으세요 (숫자만 입력)", st.session_state.input_bank_money)
@@ -507,7 +540,7 @@ elif st.session_state.mode == "APP":
         st.markdown('<div class="guide-box">🚍 [3단계: 원하는 좌석 번호 지정]<br>💺 모양의 빈자리를 누르세요.<br>(선택 완료: {} / {}석)</div>'.format(len(st.session_state.bus_selected_seats), total_need), unsafe_allow_html=True)
         
         st.write("🚍 버스 앞쪽 (운전석 방향)")
-        fixed_sold = [2, 5, 11, 19] # 선점 좌석
+        fixed_sold = [2, 5, 11, 19]
         
         for row in range(1, 10):
             cols = st.columns(4)
@@ -532,7 +565,7 @@ elif st.session_state.mode == "APP":
                         if len(st.session_state.bus_selected_seats) < total_need: st.session_state.bus_selected_seats.append(s2); st.rerun()
                         else: st.warning("이미 자리를 모두 정하셨습니다.")
             
-            cols[2].write("") # 통로 구조
+            cols[2].write("")
             
             s3 = (row - 1) * 3 + 3
             if s3 <= 28:
@@ -571,7 +604,6 @@ elif st.session_state.mode == "APP":
             for name, qty in st.session_state.cart.items():
                 st.markdown(f'<div class="info-card">● {name} — {qty}개 ({SHOP_DATA[name]*qty:,}원)</div>', unsafe_allow_html=True)
         elif "은행" in str(st.session_state.selected_biz):
-            # 💡 수정 반영 누락 버그 완벽해결: 전 장에서 바인딩된 수정 계좌/은행이 실시간 연동되어 출력됩니다.
             try: display_money = int("".join(filter(str.isdigit, str(st.session_state.input_bank_money))))
             except: display_money = 50000
             st.markdown(f"""
@@ -600,25 +632,28 @@ elif st.session_state.mode == "APP":
     elif st.session_state.step == 5:
         st.markdown('<div class="guide-box">핸드폰 온라인 결제 수단을 고르세요.</div>', unsafe_allow_html=True)
         if st.button("🏦 내 통장에서 바로 빠져나가는 계좌이체", key="a_pay_bank"): st.session_state.pay_method = "계좌이체"; st.session_state.step = 9; st.rerun()
+        if st.button("📱 모바일 논산사랑상품권 QR 스캔 결제", key="a_pay_nonsan"): st.session_state.pay_method = "지역화폐"; st.session_state.step = 6; speak("지역화폐 가상 승인 단계입니다."); st.rerun()
         if st.button("💳 카드 번호 입력 결제", key="a_pay_card"): st.session_state.pay_method = "카드"; st.session_state.step = 6; speak("가상 카드 번호를 채워주세요."); st.rerun()
         if st.button("⬅ 이전으로", key="a_b5_back"): st.session_state.step = 4; st.rerun()
 
     elif st.session_state.step == 6:
-        st.markdown('<div class="guide-box">💳 [카드 번호 안전 입력]<br>카드 번호를 안전하게 가상으로 채운 뒤 승인을 누르세요.</div>', unsafe_allow_html=True)
-        st.text_input("신용카드/체크카드 16자리 예시 입력창", "9410 - 4567 - **** - ****")
-        st.text_input("비밀번호 앞 2자리", type="password")
-        if st.button("안전 결제 승인 완료 🔒", key="complete_btn_app_card"): st.session_state.step = 7; speak("스마트폰 미션에 훌륭하게 성공하셨습니다."); st.rerun()
+        if st.session_state.pay_method == "지역화폐":
+            st.markdown('<div class="guide-box">📱 [모바일 논산사랑상품권 지결]<br>가상 가맹점 QR코드가 연동되었습니다. 아래의 결제 확정을 누르세요!</div>', unsafe_allow_html=True)
+            if st.button("지역화폐 결제 확정하기 🔒", key="complete_btn_app_nonsan"): st.session_state.step = 7; speak("상품권 결제가 성공적으로 끝났습니다."); st.rerun()
+        else:
+            st.markdown('<div class="guide-box">💳 [카드 번호 안전 입력]<br>카드 번호를 안전하게 가상으로 채운 뒤 승인을 누르세요.</div>', unsafe_allow_html=True)
+            st.text_input("신용카드/체크카드 16자리 예시 입력창", "9410 - 4567 - **** - ****")
+            st.text_input("비밀번호 앞 2자리", type="password")
+            if st.button("안전 결제 승인 완료 🔒", key="complete_btn_app_card"): st.session_state.step = 7; speak("스마트폰 미션에 훌륭하게 성공하셨습니다."); st.rerun()
         if st.button("⬅ 이전으로", key="a_b6_back"): st.session_state.step = 5; st.rerun()
 
     elif st.session_state.step == 7:
         st.success("🎉 미션 최종 성공! 완벽하게 다루셨습니다.")
         total = get_total_price()
         
-        # 데이터 대시보드 저장
         st.session_state.stat_total_money += total
         st.session_state.stat_success_count += 1
         
-        # 📱 마트와 스마트폰 전 구역 내 번호표 챙겨가라는 어색한 지시문 완전 삭제 분기 처리 완비
         st.markdown(f"""
         <div class="guide-box" style="background-color:#F0FDF4 !important; border: 3px solid #10B981;">
             참 잘하셨습니다 어르신! 👏<br>
@@ -627,7 +662,6 @@ elif st.session_state.mode == "APP":
         </div>
         """, unsafe_allow_html=True)
         
-        # 📊 실시간 SDGs 통계 리포트 피드백 화면
         st.markdown(f"""
         <div class="report-box">
             <h4>📊 오늘 나의 디지털 실력 성장 리포트 (SDGs 4 & 10)</h4>
@@ -664,5 +698,4 @@ elif st.session_state.mode == "APP":
 
 st.markdown('</div>', unsafe_allow_html=True) # 가상 스마트폰 프레임 종료 컨테이너
 
-# --- ⚠️ 모든 연습 화면 하단 안심 가이드 상시 고정 배정 ---
 st.markdown('<div class="footer-notice">⚠️ 안심 팁: 이 앱은 교육을 위해 만들어진 모의 프로그램입니다. 가상의 돈으로 연습하는 것이니 실수가 나와도 절대 실제 돈이 나가지 않습니다. 마음껏 눌러보세요!</div>', unsafe_allow_html=True)
