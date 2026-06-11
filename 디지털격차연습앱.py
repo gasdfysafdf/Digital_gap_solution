@@ -49,15 +49,19 @@ defaults = {
     'sos_triggered': False,
     # 날씨 (가상)
     'weather': '☀️ 맑음 25°C',
+    # 보이스피싱
+    'scam_step': 0,
+    'scam_answered': False,
+    'scam_result': '',
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
 # ─────────────────── 동적 폰트 크기 ───────────────────
-g_box_font = "30px" if st.session_state.font_size == "large" else "22px"
-card_font  = "25px" if st.session_state.font_size == "large" else "18px"
-btn_font   = "26px" if st.session_state.font_size == "large" else "19px"
+g_box_font = "36px" if st.session_state.font_size == "large" else "28px"
+card_font  = "30px" if st.session_state.font_size == "large" else "24px"
+btn_font   = "32px" if st.session_state.font_size == "large" else "24px"
 
 # ─────────────────── CSS 전체 스타일 ───────────────────
 st.markdown(f"""
@@ -86,16 +90,16 @@ html, body, p, span, label {{
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
     color: #FFFFFF !important;
     font-weight: 700 !important;
-    font-size: 15px !important;
+    font-size: 20px !important;
 }}
 [data-testid="stSidebar"] .stMetric label,
 [data-testid="stSidebar"] .stMetric [data-testid="metric-container"] p {{
     color: #93C5FD !important;
-    font-size: 14px !important;
+    font-size: 18px !important;
 }}
 [data-testid="stSidebar"] .stMetric [data-testid="stMetricValue"] {{
     color: #FFFFFF !important;
-    font-size: 22px !important;
+    font-size: 28px !important;
     font-weight: 900 !important;
 }}
 
@@ -112,24 +116,25 @@ html, body, p, span, label {{
 
 /* ── SDGs 배너 ── */
 .sdgs-banner {{
-    background: linear-gradient(135deg, #1D4ED8 0%, #7C3AED 100%);
+    background: linear-gradient(135deg, #1a6b3a 0%, #2d8a52 100%);
     color: #FFFFFF !important;
-    padding: 22px 20px;
+    padding: 28px 24px;
     border-radius: 20px;
     text-align: center;
     margin-bottom: 22px;
-    box-shadow: 0 8px 20px rgba(29,78,216,0.3);
+    box-shadow: 0 8px 20px rgba(26,107,58,0.35);
 }}
-.sdgs-banner h2 {{ color: #FFFFFF !important; margin:0; font-size:24px; font-weight:900; }}
+.sdgs-banner h2 {{ color: #FFFFFF !important; margin:0; font-size:30px; font-weight:900; letter-spacing:-0.5px; }}
+.sdgs-banner-sub {{ color: #d4f5e2 !important; font-size:18px; margin:8px 0 14px; font-weight:700; }}
 .sdgs-badge {{
     display: inline-block;
-    background: rgba(255,255,255,0.2);
-    padding: 4px 14px;
+    background: rgba(255,255,255,0.25);
+    padding: 8px 18px;
     border-radius: 20px;
-    font-size: 12px;
-    margin: 4px 2px 0;
+    font-size: 16px;
+    margin: 4px 4px 0;
     font-weight: 800;
-    border: 1px solid rgba(255,255,255,0.4);
+    border: 2px solid rgba(255,255,255,0.6);
     color: #FFFFFF !important;
 }}
 
@@ -234,7 +239,7 @@ html, body, p, span, label {{
     padding: 20px;
     border-radius: 18px;
     text-align: center;
-    font-size: 26px;
+    font-size: 30px;
     font-weight: 900;
     color: #065F46 !important;
     margin: 12px 0;
@@ -245,7 +250,7 @@ html, body, p, span, label {{
     padding: 20px;
     border-radius: 18px;
     text-align: center;
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 800;
     color: #7F1D1D !important;
     margin: 12px 0;
@@ -271,7 +276,7 @@ html, body, p, span, label {{
 /* ── 일반 버튼 ── */
 .stButton>button {{
     width: 100%;
-    min-height: 72px;
+    min-height: 90px;
     font-size: {btn_font} !important;
     font-weight: 800 !important;
     border-radius: 16px !important;
@@ -279,8 +284,9 @@ html, body, p, span, label {{
     background: #FFFFFF !important;
     color: #1E3A5F !important;
     box-shadow: 0 3px 8px rgba(0,0,0,0.06) !important;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     transition: all 0.2s;
+    line-height: 1.4 !important;
 }}
 .stButton>button:hover {{
     border-color: #3B82F6 !important;
@@ -305,15 +311,15 @@ div[data-testid="column"] .stButton>button[kind="primary"],
 /* ── 푸터 ── */
 .footer-notice {{
     text-align: center;
-    color: #64748B !important;
-    font-size: 15px;
+    color: #374151 !important;
+    font-size: 20px;
     font-weight: 700;
     margin-top: 30px;
-    padding: 18px;
+    padding: 22px;
     background: #F8FAFC;
     border-radius: 16px;
     border: 1px solid #E2E8F0;
-    line-height: 1.6;
+    line-height: 1.8;
 }}
 
 /* ── 오늘의 날씨 ── */
@@ -500,10 +506,10 @@ def show_badges():
 st.markdown("""
 <div class="sdgs-banner">
     <h2>📱 디지털 친구 v13.0</h2>
-    <div style="color:#BFDBFE; font-size:14px; margin:6px 0 10px;">논산시 노인 디지털 사회 격차 해소 프로젝트</div>
+    <div class="sdgs-banner-sub">논산시 노인 디지털 사회 격차 해소 프로젝트</div>
     <span class="sdgs-badge">UN SDGs 4 · 양질의 평생 교육</span>
+    <span class="sdgs-badge">UN SDGs 9 · 포용적 인프라 혁신</span>
     <span class="sdgs-badge">UN SDGs 10 · 정보 불평등 완화</span>
-    <span class="sdgs-badge">UN SDGs 11 · 포용적 지역사회</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -586,6 +592,15 @@ if st.session_state.mode == "MAIN":
         st.session_state.mode = "TUTORIAL"
         st.session_state.tutorial_step = 0
         speak("기초 사용 방법 안내를 시작합니다."); st.rerun()
+
+    if st.button("🚨 보이스피싱 예방 훈련", key="btn_main_scam"):
+        st.session_state.mode = "SCAM"
+        st.session_state.scam_step = 0
+        speak("보이스피싱 예방 훈련을 시작합니다."); st.rerun()
+
+    if st.button("❓ 자주 묻는 질문 (FAQ)", key="btn_main_faq"):
+        st.session_state.mode = "FAQ"
+        speak("자주 묻는 질문 화면입니다."); st.rerun()
 
     # 하단 정보
     st.markdown(f"""
@@ -1264,7 +1279,124 @@ elif st.session_state.mode == "APP":
         if st.button("⬅ 이전", key="a_b9_back"): st.session_state.step = 5; st.rerun()
 
 
-# ─────────────────── 폰 프레임 종료 ───────────────────
+# ══════════════════════════════════════════════
+# 🚨 보이스피싱 예방 훈련 모드
+# ══════════════════════════════════════════════
+elif st.session_state.mode == "SCAM":
+    SCAM_DATA = [
+        {
+            "scenario": "📞 전화가 왔어요!\n\n'안녕하세요, 농협은행 보안팀입니다. 고객님 계좌가 해킹됐습니다. 지금 바로 계좌 비밀번호를 알려주시면 안전하게 보호해 드리겠습니다.'",
+            "q": "이 전화, 어떻게 하실래요?",
+            "choices": ["비밀번호를 알려준다", "전화를 끊고 은행 공식 번호로 직접 전화한다", "친절하게 응대하며 얘기를 듣는다", "계좌번호만 알려준다"],
+            "ans": 1,
+            "explain": "🔒 진짜 은행은 절대 전화로 비밀번호를 묻지 않아요!\n바로 끊고 은행 공식 고객센터(농협: 1588-2100)로 직접 전화하세요."
+        },
+        {
+            "scenario": "💬 문자가 왔어요!\n\n'[국민건강보험] 환급금 128,400원이 발생했습니다. 아래 링크를 눌러 신청하세요: http://nhis-refund.xyz/claim'",
+            "q": "이 문자, 어떻게 하실래요?",
+            "choices": ["바로 링크를 눌러 신청한다", "링크를 누르지 않고 건강보험공단(1577-1000)에 직접 전화로 확인한다", "링크를 눌러 개인정보를 입력한다", "가족에게 링크를 공유한다"],
+            "ans": 1,
+            "explain": "🚫 모르는 링크는 절대 누르지 마세요!\n공공기관은 문자 링크로 개인정보를 요구하지 않아요. 공식 번호로 직접 확인하세요."
+        },
+        {
+            "scenario": "📞 전화가 왔어요!\n\n'검찰청입니다. 고객님 명의가 범죄에 사용됐습니다. 지금 바로 현금을 인출해서 안전 계좌로 이체하시면 피해를 막을 수 있습니다.'",
+            "q": "이 전화, 어떻게 하실래요?",
+            "choices": ["시키는 대로 현금을 인출한다", "무조건 사기이므로 전화를 끊고 112에 신고한다", "가족에게 물어보기 위해 잠시 기다린다", "안전 계좌로 이체한다"],
+            "ans": 1,
+            "explain": "⚠️ 검찰·경찰·금융감독원은 절대 전화로 현금 이체를 요구하지 않아요!\n바로 전화 끊고 112 또는 금융감독원 1332로 신고하세요."
+        },
+        {
+            "scenario": "💬 카카오톡 메시지가 왔어요!\n\n'엄마, 나 급하게 돈이 필요해. 핸드폰이 고장 나서 이 번호로 연락해. 100만원만 이 계좌로 보내줘: 우리은행 1002-XXX-XXXXX'",
+            "q": "이 메시지, 어떻게 하실래요?",
+            "choices": ["바로 돈을 송금한다", "아이의 원래 번호로 직접 전화해서 사실인지 확인한다", "요청한 계좌로 일단 소액만 보낸다", "친구에게 물어본다"],
+            "ans": 1,
+            "explain": "👨‍👩‍👧 가족이라도 반드시 직접 전화로 확인하세요!\n'가족 사칭 메신저 피싱'은 가장 흔한 사기 유형이에요. 항상 원래 번호로 직접 통화 확인!"
+        },
+    ]
+
+    idx = st.session_state.scam_step
+    if idx >= len(SCAM_DATA):
+        st.markdown("""
+        <div class="guide-box guide-box-success">
+            🎓 보이스피싱 예방 훈련 완료!<br>
+            어르신은 이제 사기꾼들로부터 스스로를 지킬 수 있어요! 💪<br>
+            가족과 이웃에게도 알려주세요!
+        </div>
+        """, unsafe_allow_html=True)
+        give_badge("🚨 보이스피싱 예방 수료")
+        st.markdown("""
+        <div class="info-card">
+            📞 <b>피해 신고 번호</b><br>
+            • 경찰청 사이버수사대: <b>182</b><br>
+            • 금융감독원 보이스피싱 신고: <b>1332</b><br>
+            • 한국인터넷진흥원(KISA): <b>118</b>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("🏠 홈으로", key="scam_home_done"):
+            st.session_state.mode = "MAIN"; st.rerun()
+    else:
+        sc = SCAM_DATA[idx]
+        draw_step_bar(idx+1, len(SCAM_DATA))
+        st.markdown(f'<div class="guide-box">🚨 상황 {idx+1}/{len(SCAM_DATA)}<br><br>{sc["scenario"].replace(chr(10), "<br>")}</div>',
+                    unsafe_allow_html=True)
+        st.markdown(f'<div class="info-card" style="font-size:28px;">❓ {sc["q"]}</div>', unsafe_allow_html=True)
+
+        if not st.session_state.scam_answered:
+            for ci, choice in enumerate(sc["choices"]):
+                if st.button(f"{ci+1}. {choice}", key=f"scam_c_{idx}_{ci}"):
+                    if ci == sc["ans"]:
+                        st.session_state.scam_result = "correct"
+                        speak("정답입니다! 정확하게 알고 계시네요!")
+                    else:
+                        st.session_state.scam_result = "wrong"
+                        speak("아쉬워요. 정답을 확인해보세요.")
+                    st.session_state.scam_answered = True
+                    st.rerun()
+        else:
+            if st.session_state.scam_result == "correct":
+                st.markdown('<div class="quiz-correct">✅ 정확해요! 사기를 피하셨어요! 👏</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="quiz-wrong">😟 아쉬워요! 정답: {sc["choices"][sc["ans"]]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="tooltip-box">{sc["explain"].replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
+            if st.button("다음 상황 ➡", key=f"scam_next_{idx}"):
+                st.session_state.scam_step += 1
+                st.session_state.scam_answered = False
+                st.session_state.scam_result = ''
+                st.rerun()
+        if st.button("🏠 홈으로 나가기", key="scam_exit"):
+            st.session_state.mode = "MAIN"; st.rerun()
+
+
+# ══════════════════════════════════════════════
+# ❓ 자주 묻는 질문 (FAQ) 모드
+# ══════════════════════════════════════════════
+elif st.session_state.mode == "FAQ":
+    st.markdown('<div class="guide-box">❓ 자주 묻는 질문<br>궁금한 것을 눌러보세요!</div>', unsafe_allow_html=True)
+
+    faq_list = [
+        ("📱 스마트폰 글씨가 너무 작아요", "왼쪽 메뉴(⚙️)에서 '글씨 크기 → 크게 보기'를 선택하세요! 화면이 훨씬 크게 보여요. 또는 스마트폰 설정에서 '디스플레이 → 글자 크기'를 가장 크게 설정할 수 있어요."),
+        ("🔊 음성 안내가 안 들려요", "왼쪽 메뉴(⚙️)에서 '음성 가이드 켜기'에 체크표시가 되어 있는지 확인하세요. 스마트폰 볼륨 버튼을 눌러 소리를 키워보세요."),
+        ("💳 카드를 어떻게 꽂아야 하나요?", "카드 앞면(숫자와 이름이 있는 면)이 보이도록 하여 기계 속으로 끝까지 밀어 넣으세요. '삑' 소리가 나면 성공이에요!"),
+        ("🔑 비밀번호를 잊어버렸어요", "은행 앱이나 카드사 고객센터(카드 뒷면 번호)에 전화하면 재설정할 수 있어요. 농협은행: 1588-2100"),
+        ("📦 인터넷 쇼핑 물건이 안 와요", "앱 안에 '마이페이지 → 주문내역'에서 배송 상태를 확인하세요. 문제가 있으면 '고객센터 → 1:1 문의'를 이용하세요."),
+        ("🚌 버스표를 잘못 예매했어요", "예매한 앱의 '예매내역'에서 취소할 수 있어요. 출발 30분~1시간 전까지 가능한 경우가 많아요. 터미널 창구에서도 도움받을 수 있어요."),
+        ("🤔 이 앱에서 실제 돈이 나가나요?", "아니에요! 이 앱은 완전히 교육용 모의 연습 프로그램이에요. 어떤 버튼을 눌러도 실제 돈이 나가거나 결제되지 않아요. 마음껏 연습하세요! 😊"),
+    ]
+
+    for i, (question, answer) in enumerate(faq_list):
+        with st.expander(question):
+            st.markdown(f'<div class="info-card">{answer}</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="tooltip-box">
+        더 궁금한 게 있으시면 왼쪽 메뉴의 🆘 선생님 도움 요청을 눌러주세요!
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("🏠 홈으로", key="faq_home"):
+        st.session_state.mode = "MAIN"; st.rerun()
+
+
+
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ─────────────────── 하단 안심 문구 ───────────────────
